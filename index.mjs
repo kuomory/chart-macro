@@ -3,22 +3,19 @@ import { Resvg } from '@resvg/resvg-js';
 import fs from 'node:fs';
 import path from 'node:path';
 
-// 1. 出力先ディレクトリの作成
 const OUTPUT_DIR = './output_charts';
 if (!fs.existsSync(OUTPUT_DIR)) {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 }
 
-// 2. 実行OSに応じた標準日本語フォントの自動判定
-let defaultFont = 'Noto Sans CJK JP'; // Linux (GitHub Codespaces / Chromebook)
-
-if (process.platform === 'darwin') {
-  defaultFont = 'Hiragino Sans';      // macOS
-} else if (process.platform === 'win32') {
-  defaultFont = 'Yu Gothic';          // Windows
+const FONT_PATH = path.resolve('./fonts/ipag.ttf');
+if (!fs.existsSync(FONT_PATH)) {
+  console.error(`エラー: フォントファイルが見つかりません: ${FONT_PATH}`);
+  process.exit(1);
 }
+const fontBuffer = fs.readFileSync(FONT_PATH);
+const FONT_NAME = 'IPAGothic';
 
-// 3. 入力データ（CSVやJSONを読み込む場合はここを置き換えます）
 const datasets = [
   {
     name: '東京支店',
@@ -37,9 +34,7 @@ const datasets = [
   }
 ];
 
-// 4. 1枚のグラフをPNGバッファに変換する関数
 function renderChartToPng(item) {
-  // SVGレンダラー・SSRモードでインスタンス化
   const chart = echarts.init(null, null, {
     renderer: 'svg',
     ssr: true,
@@ -47,17 +42,16 @@ function renderChartToPng(item) {
     height: 500
   });
 
-  // グラフオプションの設定
   chart.setOption({
-    // 日本語フォントを全体に適用
     textStyle: {
-      fontFamily: defaultFont
+      fontFamily: FONT_NAME
     },
     title: {
       text: `${item.name} 2026年上半期 売上実績`,
       left: 'center',
       top: 20,
       textStyle: {
+        fontFamily: FONT_NAME,
         fontSize: 18,
         fontWeight: 'bold',
         color: '#333333'
@@ -72,69 +66,46 @@ function renderChartToPng(item) {
     xAxis: {
       type: 'category',
       data: item.labels,
-      axisLabel: {
-        fontSize: 12
-      }
+      axisLabel: { fontFamily: FONT_NAME, fontSize: 12 }
     },
     yAxis: {
       type: 'value',
       name: '売上（万円）',
-      nameTextStyle: {
-        fontSize: 12
-      },
-      splitLine: {
-        lineStyle: {
-          type: 'dashed'
-        }
-      }
+      nameTextStyle: { fontFamily: FONT_NAME, fontSize: 12 }
     },
     series: [
       {
-        name: '売上',
         type: 'bar',
         data: item.values,
-        barWidth: '40%',
-        itemStyle: {
-          color: '#5470c6',
-          borderRadius: [4, 4, 0, 0]
-        },
+        itemStyle: { color: '#5470c6', borderRadius: [4, 4, 0, 0] },
         label: {
           show: true,
           position: 'top',
+          fontFamily: FONT_NAME,
           fontSize: 11
         }
       }
     ]
   });
 
-  // SVG文字列を生成
   const svgString = chart.renderToSVGString();
-
-  // ループ処理でのメモリリークを防ぐため破棄
   chart.dispose();
 
-  // resvgでSVGからPNGへ変換
   const resvg = new Resvg(svgString, {
     fitTo: { mode: 'width', value: 800 },
     font: {
-      loadSystemFonts: true,
-      defaultFontFamily: defaultFont
+      fontBuffers: [fontBuffer],
+      defaultFontFamily: FONT_NAME,
+      loadSystemFonts: false
     }
   });
 
   return resvg.render().asPng();
 }
 
-// 5. ループ実行して画像を順次保存
-console.log(`使用フォント: ${defaultFont}`);
-console.log('グラフ生成を開始します...');
-
 for (const item of datasets) {
   const pngBuffer = renderChartToPng(item);
   const outputPath = path.join(OUTPUT_DIR, `${item.name}.png`);
-
   fs.writeFileSync(outputPath, pngBuffer);
-  console.log(`- 出力完了: ${outputPath}`);
+  console.log(`生成完了: ${outputPath}`);
 }
-
-console.log(`完了: ${datasets.length} 件の画像を ${OUTPUT_DIR} に保存しました。`);

@@ -1,0 +1,24 @@
+{
+  "name": "chart-macro",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/kuomory/chart-macro#readme",
+  "bugs": {
+    "url": "https://github.com/kuomory/chart-macro/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kuomory/chart-macro.git"
+  },
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "echarts": "^6.1.0"
+  }
+}
